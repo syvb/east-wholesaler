@@ -13,8 +13,7 @@
     "express": "^4.16.4",
     "node-fetch": "^2.6.0",
     "coordinate-parser": "^1.0.2",
-    "form-data": "^2.5.0",
-    "ipfs": "^0.52.2"
+    "form-data": "^2.5.0"
   },
   "engines": {
     "node": "14.x"

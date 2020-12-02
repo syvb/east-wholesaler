@@ -1,8 +1,8 @@
 const express = require("express");
 const gen = require("./gen.js");
 const fetch = require("node-fetch");
-const FormData = require("form-data")
-const IPFS = require("ipfs"); 
+const FormData = require("form-data");
+const fs = require("fs");
 const USE_INFURA = false;
 
 const app = express();
@@ -26,7 +26,6 @@ const regions = [
 
 let timeString = Math.floor((Date.now() / 5000)).toString(36);
 
-const ipfsP = IPFS.create()
 
 async function pinToIPFS(file, filename, eternumName) {
   let infuraHash;
@@ -82,48 +81,7 @@ async function pinToIPFS(file, filename, eternumName) {
   });
   const eternumRes = await eternumReq.json();
   console.log(eternumRes);
-  
-  const ipfs = await ipfsP;
-  
-  // x
-  //await ipfs.key.gen("x");
-  //const pem = await ipfs.key.export('x', 'sekretpw');
-  //console.log("pem", pem);
-  // x
-  
-  const key = await ipfs.key.import('clone', `-----BEGIN ENCRYPTED PRIVATE KEY-----
-MIIFODBiBgkqhkiG9w0BBQ0wVTA0BgkqhkiG9w0BBQwwJwQQcKQVjlQquWS9QIM7
-ib8vEgICJxACASAwDAYIKoZIhvcNAgsFADAdBglghkgBZQMEASoEEDOB36WYUgFZ
-HwcjfMIo9HQEggTQiTnCEjIFNrdAVn9GvNlBMjmKSmT+R6rWpO2SJ4K/oOchz5iL
-stfKCfUYO2puuK/zBKWFdsrpelOVGF73mOHdcc+wHDJf+w7O0FqF4IkxHOnfnKXg
-5cboSRbELaPFLBhDYwc+JaOxWop42GDNR1K8qdGCQ/g4sjlodGBi3NJJJVCLXmtX
-GjMzDHABV0ISwD82p1PMRK6QLqeJaN4QyZWEDfFIz9sTg8S1f2a2AlISC/vuEUAy
-FWFJZNqUW1aLSqQs4VmJBpYgB0IBo2R2kmdutxgP24CdiIpSAX09CKgtm4tlZvTo
-0CHx3KytPLXklliZIB1/TgfRfgPYJH5TajQIJC5rcPQkojXJFC5mJ6CnDNxLXYnU
-rRZSZ0T8lcX6qqsTFW3S4U3KCSvfqqOPE68jdQUrqBh/xd7qQwLhEKVHf5tYLfJr
-S5roKJKWWG7eaHV7cE+tS2ajdzRIdcAktAn6msJ1OUd5OmHHPBHNuYeFEG4lKRBn
-MvP039m76ewj4P1zc9bZjxvF4ByXBOQ+quxSBMwai+5poQFXI2JNa1q041lqfjYA
-LX2GBnhYxbU3mWC5kcpReAheJuACydidXdBtn1uoFhtqjWeKMbRe1SEgXa52iv8v
-qth7m/8sWpFOYktxAnTJBuwsb1I78oh7XdvVUy45sG1mHXVKp+rVGtFhcWlQfbjU
-eaEcARE0tIRo7vqkQGNGeJviM4ap01lpRvwiNNs5fypxpqopTh2oNOoVXsRf1OGr
-v7vnoYr78O1lvjKxBYrIwvEIgMkmUhqk6s1ENnLsTClNvsodzbdDk9FypLDVD7YJ
-IOT7wZWWES2lhxRfuGHYChgD0DTjqUAX1CjAANK+I4wkR+w5hytj7/5n3IJwtv+H
-ANlnPgWOgVpvjcw2S/4TFcskvxWOkuvfzlfWjir6R08S7JsyBsHyY11N1v/3Pp3V
-X+c82IsLahrJ3DypxjGv4wZTfkGlorZulsG+wAAe3zcs3vzMg5GLO865aDmpUSUu
-KlpYYW34AhVrnxG3QJ18k5Fnyhuu3hKwfovCL/Sm57+Mbx/9YdbjILVWUgqnOAhz
-ltUSTzcpsbUhSE09jX6K8tNiIOjDZWa9x0HLa3qp3eM+wT9NlQf6Afoe/O1hRO0J
-+kvRAXWaxiCfpUF92R7qPLeAj6qygx4LiXRNUTELbLoAO5197Fw7g/G/NcL4bmK2
-wrGWSQ5PEYdw1QruQkmb5A4I74VnbVLrRipMzXaPzA/nONz1apTqZqeSZaBLxN5B
-kz1rD6uFTKfoLQmkBPDFLgV0WSYb9xSkHVQ+3saEKP8HeD6s0naLcSsmVZl3c7zY
-GmGetUUzGX4WduKxu6O7USvC5JyWkYuVamIHAf/fF6Fycqz8JYU8+ARlVCpreZ7L
-oFAZRQ5uCAnypk/4vtU9Sa+Mc/t08DQQDT7e5+fY6rbPMdGseP6q56631+FyndQT
-YaEYXE8zqUobqCFasYT2C7oNEG0HF6DY6H2z+e41eiYXrxQeaxXyVXCFmKN8YiU2
-5fJFrUIgEVVN4GZODuX2X7i1naYN9PNKXNzYbpNRVi3GsZSncsQBETWQIGzqSIS8
-j3IJQRvIV1XtSrBdJLe537tZM0TcQs6QU9CIl10JFmUD+JZTjZCj8yNltKc=
------END ENCRYPTED PRIVATE KEY-----`, 'sekretpw')
-  const pubRes = await ipfs.name.publish(`/ipfs/${hash}`, { key: "clone" });
-  console.log("ipns", pubRes.name);
-  
+    
   return hash;
 }
 
@@ -131,9 +89,10 @@ async function doRegion(region) {
   const kml = await gen((region === "world") ? null : region);
   const filename = `${region.toLowerCase().replace(/ /g, "-")}-roadsides.kml`;
   const eternumName = `lcra-${region.toLowerCase().replace(/ /g, "-")}-${timeString}`;
-  const hash = await pinToIPFS(kml, filename, eternumName);
-  
-  return `https://ipfs.eternum.io/ipfs/${hash}/${filename}`;
+  const hash = await pinToIPFS(kml, filename, eternumName, region === "world");
+  try { fs.mkdirSync(__dirname + "/maps") } catch (e) { /* already exists */ }
+  fs.writeFileSync(`${__dirname}/maps/${filename}`, kml, "utf-8");
+  return `/maps/${filename}`;
 }
 
 async function updateEternum() {
@@ -206,5 +165,9 @@ app.get(["/:region", "/"], async (req, res) => {
   updateEternum();
 });
 
-app.listen(process.env.PORT);
-console.log("Starting server...");
+if (process.env["EASTWHOLESALER_GEN"]) {
+  updateEternum();
+} else {
+  app.listen(process.env.PORT);
+  console.log("Starting server...");
+}
