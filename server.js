@@ -1,9 +1,6 @@
 const express = require("express");
 const gen = require("./gen.js");
-const fetch = require("node-fetch");
-const FormData = require("form-data");
 const fs = require("fs");
-const USE_INFURA = false;
 
 const app = express();
 
@@ -24,79 +21,17 @@ const regions = [
   "Yukon"
 ];
 
-let timeString = Math.floor((Date.now() / 5000)).toString(36);
-
-
-async function pinToIPFS(file, filename, eternumName) {
-  let infuraHash;
-  if (USE_INFURA) {
-    let fd = new FormData();
-    fd.append("file", file, {
-      filename,
-      contentType: "application/vnd.google-earth.kml+xml"
-    });
-    const infuraReq = await fetch("https://ipfs.infura.io:5001/api/v0/add?pin=true&wrap-with-directory=true", {
-      method: "POST",
-      body: fd
-    });
-    const infuraText = await infuraReq.text();
-    let infuraRes;
-    try {
-      infuraRes = JSON.parse(infuraText.split("\n")[1]);
-    } catch (e) {
-      console.warn("infura is acting up", infuraText);
-      await new Promise(resolve => setTimeout(resolve, 15000));
-      return await pinToIPFS(file, filename, eternumName);
-    }
-    infuraHash = infuraRes.Hash;
-  }
-  
-  let eternumUploadReq;
-  if (filename) {
-    eternumUploadReq = await fetch("https://ipfs.eternum.io/ipfs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn/" + filename, {
-      method: "PUT",
-      body: file
-    });
-  } else {
-    eternumUploadReq = await fetch("https://ipfs.eternum.io/ipfs/" + filename, {
-      method: "POST",
-      body: file
-    });
-  }
-  const hash = eternumUploadReq.headers.get("ipfs-hash");
-  if (USE_INFURA) {
-    console.assert(infuraHash === hash, "Infura and Eternum hash file the same. Eternum: " + hash + " Infura: " + infuraHash);
-  } 
-  const eternumReq = await fetch("https://www.eternum.io/api/pin/", {
-    method: "POST",
-    headers: {
-      Authorization: `Token ${process.env.ETERNUM_KEY}`,
-      Accept: "application/json",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      hash,
-      name: eternumName
-    })
-  });
-  const eternumRes = await eternumReq.json();
-  console.log(eternumRes);
-    
-  return hash;
-}
+const mapsDir = __dirname + "/maps";
 
 async function doRegion(region) {
   const kml = await gen((region === "world") ? null : region);
   const filename = `${region.toLowerCase().replace(/ /g, "-")}-roadsides.kml`;
-  const eternumName = `lcra-${region.toLowerCase().replace(/ /g, "-")}-${timeString}`;
-  const hash = await pinToIPFS(kml, filename, eternumName, region === "world");
-  try { fs.mkdirSync(__dirname + "/maps") } catch (e) { /* already exists */ }
-  fs.writeFileSync(`${__dirname}/maps/${filename}`, kml, "utf-8");
+  try { fs.mkdirSync(mapsDir) } catch (e) { /* already exists */ }
+  fs.writeFileSync(`${mapsDir}/${filename}`, kml, "utf-8");
   return `/maps/${filename}`;
 }
 
-async function updateEternum() {
-  timeString = Math.floor((Date.now() / 5000)).toString(36);
+async function updateFiles() {
   let html = `
     <!doctype html>
     <html>
@@ -135,24 +70,15 @@ async function updateEternum() {
       </body>
     </html>
   `;
-  const hash = await pinToIPFS(html, null, `kml-list-${timeString}`);
-  console.log("doing html index");
-  const eternumReq = await fetch("https://eternum.io/api/site/", {
-    method: "PUT",
-    headers: {
-      Authorization: `Token ${process.env.ETERNUM_KEY}`,
-      Accept: "application/json",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      site_hash: hash
-    })
-  });
-  console.log("site set result", await (eternumReq.text()));
+  try { fs.mkdirSync(mapsDir) } catch (e) { /* already exists */ }
+  fs.writeFileSync(`${mapsDir}/index.html`, html, "utf-8");
+  console.log("wrote html index");
 }
 
+app.use("/maps", express.static(mapsDir));
+
 app.get("/just-update-files", async (req, res) => {
-  await updateEternum();
+  await updateFiles();
   res.send("done");
 });
 
@@ -162,11 +88,11 @@ app.get(["/:region", "/"], async (req, res) => {
   res.type("application/vnd.google-earth.kml+xml");
   res.set("content-disposition", `attachment; filename="${name}.kml"`);
   res.send(await gen(region));
-  updateEternum();
+  updateFiles();
 });
 
 if (process.env["EASTWHOLESALER_GEN"]) {
-  updateEternum();
+  updateFiles();
 } else {
   app.listen(process.env.PORT);
   console.log("Starting server...");
